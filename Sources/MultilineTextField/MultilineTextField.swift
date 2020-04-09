@@ -9,7 +9,6 @@
 import SwiftUI
 import UIKit
 
-// TODO: Reduce height of Geometry Reader
 // TODO: Replace bindings with anchor preferences
 // TODO: Add modifiers for font and line spacing
 // TODO: Allow adding and removing attributes from NSTextStorage
@@ -40,7 +39,6 @@ private struct TextView: UIViewRepresentable {
         let textView = uiView
         textView.text = text
         DispatchQueue.main.async {
-            //self.contentSize = textView.sizeThatFits(self.frameSize)
             self.contentSize = textView.sizeThatFits(
                 CGSize(width: textView.frame.width,
                        height: .greatestFiniteMagnitude
@@ -71,9 +69,6 @@ private struct TextView: UIViewRepresentable {
 }
 
 struct MultilineTextField: View {
-    @State private var id = UUID()
-        // TODO: Is it possible to make this property a constant?
-        // Or retrieve the ID that SwiftUI uses internally?
     @Binding var text: String
     let font: UIFont
     
@@ -90,57 +85,17 @@ struct MultilineTextField: View {
     }
     
     var body: some View {
-        //GeometryReader { geometry in
-            TextView(
-                text: self.$text,
-                font: self.font,
-                //frameSize: CGSize(width: 343, height: CGFloat.greatestFiniteMagnitude),
-                contentSize: self.$contentSize
+        TextView(text: self.$text, font: self.font, contentSize: self.$contentSize)
+            .frame(
+                height: self.contentSize.height
             )
-                .anchorPreference(key: TextFieldPreferenceKey.self, value: .bounds) {
-                    [TextFieldPreferenceData(id: self.id, bounds: $0)]
-                }
-                .frame(
-                    height: self.contentSize.height
-                    /*height: self.contentSize == .zero
-                        // If this is the first update, use a dummy UITextView
-                        // to calculate the content size.
-                        ? MultilineTextField
-                            .initialContentSize(
-                                //text: self.text, font: self.font, frameSize: geometry.size
-                                text: self.text, font: self.font, frameSize: CGSize(width: 343, height: CGFloat.greatestFiniteMagnitude)
-                            ).height
-                        // Otherwise use the content size provided by the actual UITextView
-                        // wrapped by the SwiftUI TextView.
-                        : self.contentSize.height*/
-                )
-                .background(Color.red)
-        //}
-        //.background(Color.blue)
-    }
-    
-    // Constructs a dummy UITextView that matches
-    // the actual UITextView used by the SwiftUI TextView
-    // and asks for its content size.
-    private static func initialContentSize(
-        text: String,
-        font: UIFont,
-        frameSize: CGSize
-    ) -> CGSize {
-        let textView = UITextView.textField
-        textView.text = text
-        textView.font = font
-        
-        // Remove excess padding to match TextView.
-        textView.textContainerInset = .zero
-        textView.textContainer.lineFragmentPadding = 0
-        
-        return textView.sizeThatFits(frameSize)
     }
 }
 
 private extension UITextView {
     // Constructs a UITextView that behaves like a SwiftUI TextField.
+    // TODO: Consider making this computed property a function
+    // (so the syntax () looks more like an initializer).
     static var textField: UITextView {
         let textView = UITextView()
         
@@ -161,6 +116,7 @@ private extension UITextView {
     }
 }
 
+// TODO: Consider removing these structs if they remain unused.
 private struct TextFieldPreferenceData {
     let id: UUID
     let bounds: Anchor<CGRect>
