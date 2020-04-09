@@ -13,11 +13,12 @@ import UIKit
 // TODO: Add modifiers for font and line spacing
 // TODO: Allow adding and removing attributes from NSTextStorage
 // TODO: Explore whether you can replace the dummy UITextView
-// TODO: Move scroll view to avoid keyboard covering text.
+// TODO: Move scroll view to avoid keyboard covering text
 // with a simple calculation. (Unlikely.)
 // TODO: Remove error:
 //       Snapshotting a view (0x7feb99b28ca0, _UIReplicantView)
-//       that has not been rendered at least once requires afterScreenUpdates:YES.
+//       that has not been rendered at least once requires afterScreenUpdates:YES
+// TODO: Add support for NSTextView
 
 private struct TextView: UIViewRepresentable {
     @Binding var text: String
