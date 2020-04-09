@@ -9,36 +9,59 @@
 import SwiftUI
 import UIKit
 
-// TODO: Replace bindings with anchor preferences
-// TODO: Add modifiers for font and line spacing
 // TODO: Allow adding and removing attributes from NSTextStorage
-// TODO: Explore whether you can replace the dummy UITextView
 // TODO: Move scroll view to avoid keyboard covering text
 // with a simple calculation. (Unlikely.)
+// TODO: Avoid resetting text and attributes every time you type a character.
+
+// TODO: Add support for NSTextView
+// TODO: Prevent TextView from overrunning the screen.
+// TODO: Replace bindings with preference keys if possible
 // TODO: Remove error:
 //       Snapshotting a view (0x7feb99b28ca0, _UIReplicantView)
 //       that has not been rendered at least once requires afterScreenUpdates:YES
-// TODO: Add support for NSTextView
 
 private struct TextView: UIViewRepresentable {
     @Binding var text: String
-    let font: UIFont
-    //let frameSize: CGSize
-    @Binding var contentSize: CGSize
+    let attributes: MultilineTextField.Attributes
+    @Binding private(set) var contentSize: CGSize
     
     func makeUIView(context: Context) -> UITextView {
         let textView = UITextView.textField
-        textView.font = font
-        
-        // Connect TextView to Coordinator.
         textView.delegate = context.coordinator
-        
         return textView
     }
     
     func updateUIView(_ uiView: UITextView, context: Context) {
         let textView = uiView
         textView.text = text
+        
+        textView.font = attributes.font
+        textView.textColor = attributes.foregroundColor
+        
+        if context.environment.disableAutocorrection == true {
+            textView.autocorrectionType = .no
+        } else {
+            textView.autocorrectionType = .default
+        }
+        
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.allowsDefaultTighteningForTruncation = context.environment.allowsTightening
+        paragraphStyle.lineSpacing = context.environment.lineSpacing
+        textView.textStorage.addAttribute(
+            .paragraphStyle,
+            value: paragraphStyle,
+            range: NSRange(location: 0, length: text.utf16.count)
+        )
+        // TODO: Avoid initializing a new paragraph style every render call
+        
+        // UIFont is a class
+        // UIColor is a class
+        // Both conform to Equatable
+        // TODO: Consider replacing them with structs
+        // similar to Color and Font
+        
+        // Update content size.
         DispatchQueue.main.async {
             self.contentSize = textView.sizeThatFits(
                 CGSize(width: textView.frame.width,
@@ -66,29 +89,46 @@ private struct TextView: UIViewRepresentable {
                 self.text = textView.text
             }
         }
+        
+        /*func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            // Prevent UITextView from scrolling vertically.
+            // TODO: Seems like a hack. Consider alternatives.
+            scrollView.setContentOffset(
+                CGPoint(x: scrollView.contentOffset.x, y: 0),
+                animated: false
+            )
+        }*/
     }
 }
 
 struct MultilineTextField: View {
     @Binding var text: String
-    let font: UIFont
+
+    fileprivate struct Attributes {
+        let font: UIFont
+        let foregroundColor: UIColor
+    }
     
+    private let attributes: Attributes
     @State private var contentSize: CGSize = .zero
-    // The size of the actual text, reported by the UITextView
-    // inside the SwiftUI TextView.
     
     init(
         text: Binding<String>,
-        font: UIFont = .preferredFont(forTextStyle: .body)
+        font: UIFont = .preferredFont(forTextStyle: .body),
+        foregroundColor: UIColor = .label
     ){
         self._text = text
-        self.font = font
+        self.attributes = Attributes(
+            font: font,
+            foregroundColor: foregroundColor
+        )
     }
     
     var body: some View {
-        TextView(text: self.$text, font: self.font, contentSize: self.$contentSize)
+        TextView(text: self.$text, attributes: self.attributes, contentSize: self.$contentSize)
             .frame(
                 height: self.contentSize.height
+                // TODO: Or the maximum height of the frame.
             )
     }
 }
@@ -129,3 +169,38 @@ private struct TextFieldPreferenceKey: PreferenceKey {
         value.append(contentsOf: nextValue())
     }
 }
+
+/*extension NSTextAlignment {
+    init(textAlignment: TextAlignment) {
+        switch textAlignment {
+        case .center:
+            self = .center
+        case .leading:
+            self = .natural
+        case .trailing:
+            self = .right
+            // TODO: Not strictly correct.
+            // Trailing could also be left in LTR languages.
+        }
+    }
+}*/
+
+// # Modifiers
+// baselineOffset
+// bold()
+// font
+// fontWeight
+// foregroundColor
+// italic
+// kerning
+// strikethrough(active:color:)
+// underline(active:color:)
+// accentColor(color:)
+// textFieldStyle
+// multilineTextAlignment
+
+// allowsTightening?
+// editMode
+// isEnabled
+// lineLimit
+// lineSpacing
