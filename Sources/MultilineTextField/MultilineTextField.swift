@@ -1,6 +1,6 @@
 //
-//  MultilineTextField.swift
-//  MultilineTextField
+//  TextView2.swift
+//  NonScrollingTextView2
 //
 //  Created by Ian Sampson on 2020-04-08.
 //  Copyright © 2020 Ian Sampson. All rights reserved.
@@ -9,9 +9,9 @@
 import SwiftUI
 import UIKit
 
-// TODO: Add modifiers for font and line spacing
-// TODO: Expose attributes
 // TODO: Reduce height of Geometry Reader
+// TODO: Add modifiers for font and line spacing
+// TODO: Allow adding and removing attributes from NSTextStorage
 // TODO: Explore whether you can replace the dummy UITextView
 // with a simple calculation. (Unlikely.)
 
@@ -61,6 +61,8 @@ struct MultilineTextField: View {
     let font: UIFont
     
     @State private var contentSize: CGSize = .zero
+    // The size of the actual text, reported by the UITextView
+    // inside the SwiftUI TextView.
     
     init(
         text: Binding<String>,
@@ -80,17 +82,22 @@ struct MultilineTextField: View {
             )
                 .frame(
                     height: self.contentSize == .zero
+                        // If this is the first update, use a dummy UITextView
+                        // to calculate the content size.
                         ? MultilineTextField
                             .initialContentSize(
                                 text: self.text, font: self.font, geometry: geometry
                             ).height
+                        // Otherwise use the content size provided by the actual UITextView
+                        // wrapped by the SwiftUI TextView.
                         : self.contentSize.height
                 )
-                .background(Color.red)
         }
-        .background(Color.blue)
     }
     
+    // Constructs a dummy UITextView that matches
+    // the actual UITextView used by the SwiftUI TextView
+    // and asks it to calculate its content size.
     private static func initialContentSize(
         text: String,
         font: UIFont,
@@ -109,7 +116,7 @@ struct MultilineTextField: View {
 }
 
 private extension UITextView {
-    // Make a UITextView that behaves like TextField.
+    // Make a UITextView that behaves like a SwiftUI TextField.
     static var textField: UITextView {
         let textView = UITextView()
         
