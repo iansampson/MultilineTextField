@@ -9,18 +9,6 @@
 import SwiftUI
 import UIKit
 
-// TODO: Allow adding and removing attributes from NSTextStorage
-// TODO: Move scroll view to avoid keyboard covering text
-// with a simple calculation. (Unlikely.)
-// TODO: Avoid resetting text and attributes every time you type a character.
-
-// TODO: Add support for NSTextView
-// TODO: Prevent TextView from overrunning the screen.
-// TODO: Replace bindings with preference keys if possible
-// TODO: Remove error:
-//       Snapshotting a view (0x7feb99b28ca0, _UIReplicantView)
-//       that has not been rendered at least once requires afterScreenUpdates:YES
-
 private struct TextView: UIViewRepresentable {
     @Binding var text: String
     let attributes: MultilineTextField.Attributes
@@ -34,32 +22,45 @@ private struct TextView: UIViewRepresentable {
     
     func updateUIView(_ uiView: UITextView, context: Context) {
         let textView = uiView
-        textView.text = text
         
-        textView.font = attributes.font
-        textView.textColor = attributes.foregroundColor
+        // Update text view from model
+        let difference = text.difference(from: textView.text)
+        textView.apply(difference)
         
+        // Construct paragraph style
+        // TODO: Consider making this a method on Attributes
+        let paragraphStyle = NSMutableParagraphStyle()
+            // TODO: Avoid initializing a new paragraph style every render call
+        //paragraphStyle.allowsDefaultTighteningForTruncation = context.environment.allowsTightening
+        //paragraphStyle.lineSpacing = context.environment.lineSpacing
+        paragraphStyle.lineHeightMultiple = attributes.lineHeightMultiple
+        
+        // Construct attributes
+            // TODO: Consider making this a method on MultilineTextField.Attributes
+            // TODO: Diff attributes and update only the ones that have changed
+            // (and in the ranges where they are needed)
+        let attributeDictionary: [NSAttributedString.Key : Any] = [
+            .font: attributes.font,
+            .foregroundColor: attributes.foregroundColor,
+            .baselineOffset: attributes.baselineOffset,
+            .paragraphStyle: paragraphStyle
+        ]
+        
+        // Update string attributes
+        textView.textStorage.addAttributes(
+            attributeDictionary,
+            range: NSRange(location: 0, length: textView.textStorage.length)
+        )
+        
+        // Update typing attributes
+        textView.typingAttributes = attributeDictionary
+        
+        // Update autocorrection setting
         if context.environment.disableAutocorrection == true {
             textView.autocorrectionType = .no
         } else {
             textView.autocorrectionType = .default
         }
-        
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.allowsDefaultTighteningForTruncation = context.environment.allowsTightening
-        paragraphStyle.lineSpacing = context.environment.lineSpacing
-        textView.textStorage.addAttribute(
-            .paragraphStyle,
-            value: paragraphStyle,
-            range: NSRange(location: 0, length: text.utf16.count)
-        )
-        // TODO: Avoid initializing a new paragraph style every render call
-        
-        // UIFont is a class
-        // UIColor is a class
-        // Both conform to Equatable
-        // TODO: Consider replacing them with structs
-        // similar to Color and Font
         
         // Update content size.
         DispatchQueue.main.async {
@@ -81,23 +82,19 @@ private struct TextView: UIViewRepresentable {
             self._text = text
         }
         
-        func textViewDidChange(_ textView: UITextView) {
-            // Updates the text binding (which also
-            // triggers updateUIView and recalculates
-            // the frame size).
+        func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+            // TODO: Make this method more efficient by updating
+            // only the part of the string that changed
+            let newText = (textView.text as NSString)
+                .replacingCharacters(in: range, with: text)
             DispatchQueue.main.async {
-                self.text = textView.text
+                self.text = newText
             }
+            
+            // Prevent text view from mutating its own text storage
+            // and instead update the model
+            return false
         }
-        
-        /*func scrollViewDidScroll(_ scrollView: UIScrollView) {
-            // Prevent UITextView from scrolling vertically.
-            // TODO: Seems like a hack. Consider alternatives.
-            scrollView.setContentOffset(
-                CGPoint(x: scrollView.contentOffset.x, y: 0),
-                animated: false
-            )
-        }*/
     }
 }
 
@@ -107,6 +104,8 @@ struct MultilineTextField: View {
     fileprivate struct Attributes {
         let font: UIFont
         let foregroundColor: UIColor
+        let baselineOffset: CGFloat
+        let lineHeightMultiple: CGFloat
     }
     
     private let attributes: Attributes
@@ -115,12 +114,16 @@ struct MultilineTextField: View {
     init(
         text: Binding<String>,
         font: UIFont = .preferredFont(forTextStyle: .body),
-        foregroundColor: UIColor = .label
+        foregroundColor: UIColor = .label,
+        baselineOffset: CGFloat = 0,
+        lineHeightMultiple: CGFloat = 1
     ){
         self._text = text
         self.attributes = Attributes(
             font: font,
-            foregroundColor: foregroundColor
+            foregroundColor: foregroundColor,
+            baselineOffset: baselineOffset,
+            lineHeightMultiple: lineHeightMultiple
         )
     }
     
@@ -128,7 +131,6 @@ struct MultilineTextField: View {
         TextView(text: self.$text, attributes: self.attributes, contentSize: self.$contentSize)
             .frame(
                 height: self.contentSize.height
-                // TODO: Or the maximum height of the frame.
             )
     }
 }
@@ -156,51 +158,3 @@ private extension UITextView {
         return textView
     }
 }
-
-// TODO: Consider removing these structs if they remain unused.
-private struct TextFieldPreferenceData {
-    let id: UUID
-    let bounds: Anchor<CGRect>
-}
-
-private struct TextFieldPreferenceKey: PreferenceKey {
-    static var defaultValue: [TextFieldPreferenceData] = []
-    static func reduce(value: inout [TextFieldPreferenceData], nextValue: () -> [TextFieldPreferenceData]) {
-        value.append(contentsOf: nextValue())
-    }
-}
-
-/*extension NSTextAlignment {
-    init(textAlignment: TextAlignment) {
-        switch textAlignment {
-        case .center:
-            self = .center
-        case .leading:
-            self = .natural
-        case .trailing:
-            self = .right
-            // TODO: Not strictly correct.
-            // Trailing could also be left in LTR languages.
-        }
-    }
-}*/
-
-// # Modifiers
-// baselineOffset
-// bold()
-// font
-// fontWeight
-// foregroundColor
-// italic
-// kerning
-// strikethrough(active:color:)
-// underline(active:color:)
-// accentColor(color:)
-// textFieldStyle
-// multilineTextAlignment
-
-// allowsTightening?
-// editMode
-// isEnabled
-// lineLimit
-// lineSpacing
