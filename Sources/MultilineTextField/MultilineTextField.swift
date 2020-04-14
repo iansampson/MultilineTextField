@@ -8,11 +8,6 @@
 import Foundation
 import SwiftUI
 
-public struct AttributedSpan {
-    let range: Range<String.Index>
-    let attributes: [NSAttributedString.Key : Any]
-}
-
 public struct MultilineTextField: View {
     @Binding private var text: String
     

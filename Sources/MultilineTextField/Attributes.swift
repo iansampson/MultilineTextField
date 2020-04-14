@@ -14,3 +14,12 @@ struct Attributes {
     let baselineOffset: CGFloat
     let lineHeightMultiple: CGFloat
 }
+
+public struct AttributedSpan {
+    public let range: Range<String.Index>
+    public let attributes: [NSAttributedString.Key : Any]
+    public init(range: Range<String.Index>, attributes: [NSAttributedString.Key : Any]) {
+        self.range = range
+        self.attributes = attributes
+    }
+}
