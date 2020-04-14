@@ -7,13 +7,13 @@
 
 import SwiftUI
 
-struct MultilineTextField: View {
-    @Binding var text: String
+public struct MultilineTextField: View {
+    @Binding private var text: String
     
     private let attributes: Attributes
     @State private var contentSize: CGSize = .zero
     
-    init(
+    public init(
         text: Binding<String>,
         font: UIFont = .preferredFont(forTextStyle: .body),
         foregroundColor: UIColor = .label,
@@ -29,7 +29,7 @@ struct MultilineTextField: View {
         )
     }
     
-    var body: some View {
+    public var body: some View {
         TextView(text: self.$text, attributes: self.attributes, contentSize: self.$contentSize)
             .frame(
                 height: self.contentSize.height
