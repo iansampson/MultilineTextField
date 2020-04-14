@@ -12,6 +12,7 @@ import UIKit
 struct TextView: UIViewRepresentable {
     @Binding var text: String
     let attributes: Attributes
+    let attributedSpans: [AttributedSpan]
     @Binding private(set) var contentSize: CGSize
     
     func makeUIView(context: Context) -> UITextView {
@@ -60,6 +61,13 @@ struct TextView: UIViewRepresentable {
             textView.autocorrectionType = .no
         } else {
             textView.autocorrectionType = .default
+        }
+        
+        // Apply attributed spans
+        attributedSpans.forEach {
+            textView.textStorage.addAttributes(
+                $0.attributes, range: NSRange($0.range, in: text)
+            )
         }
         
         // Update content size.
